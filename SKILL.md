@@ -11,6 +11,7 @@ description: Faturamento NFS-e SP (Emissão e Cancelamento de Notas Fiscais em S
 Para preparar ou validar um rascunho sem rede, use `previsualizar_nfse_municipal.py` conforme [VALIDACAO_MUNICIPAL_V2.md](VALIDACAO_MUNICIPAL_V2.md). O novo cliente de teste também é local por padrão; `--enviar-teste` exige autorização explícita para teste remoto. A prévia não autoriza emissão nem avança o contador. Esses módulos não alteram os emissores legados.
 
 
+
 Esta skill permite ao agente **emitir, cancelar e consultar** Notas Fiscais de Serviço eletrônicas (NFS-e) da Prefeitura de São Paulo, conversando com o usuário em português.
 
 > **Todos os arquivos da skill devem estar na mesma pasta** (ex.: `workspace/skills/nfse-sp/`).
