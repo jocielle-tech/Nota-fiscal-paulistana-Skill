@@ -19,4 +19,12 @@ O total deve ser informado explicitamente em `valor_final_cobrado`, positivo. Va
 
 Limites: não implementa numeração/idempotência de produção nem assinatura com intermediário. A validação local rejeita tomador igual ao prestador. Não certifica adequação tributária nem todos os perfis municipais.
 
+## Testes de regressão
+
+São 33 testes locais, sem serviço fiscal ou certificado real. Além do payload e dos schemas, cobrem assinatura RSA-SHA1 e verificação XML com chaves efêmeras, transporte simulado sem reenvio, funcionamento das CLIs fora da pasta da skill e JSON UTF-8 no Windows. A prévia rejeita intermediários ainda não implementados antes de acessar credenciais.
+
+O parser exige Envelope/Body SOAP, TesteEnvioLoteRPSResponse, RetornoXML único e raiz municipal RetornoEnvioLoteRPS. Rejeita respostas de outro método, SOAP Fault, confirmação ambígua e erros municipais. Preserva alertas longos sem convertê-los em erro: há retornos municipais cujo texto excede o limite do XSD arquivado. Essa verificação de protocolo não é uma validação integral do schema de resposta.
+
+Foi concluído separadamente um ciclo autorizado de emissão e cancelamento reais usando o construtor municipal, com consultas independentes. Esse executor controlado não faz parte do PR e não demonstra homologação da integração com os emissores legados. Divergências entre os retornos de consulta e os XSD arquivados permanecem uma pendência desse fluxo separado. Não adicionar respostas reais, documentos fiscais ou dados pessoais aos testes públicos.
+
 Fontes: [manual municipal 3.3.9](https://notadomilhao.sf.prefeitura.sp.gov.br/wp-content/uploads/2026/10/NFe_Web_Service-v3.3.9.pdf), [schemas v02-5](https://notadomilhao.sf.prefeitura.sp.gov.br/schemas-reformatributaria-v02-5).

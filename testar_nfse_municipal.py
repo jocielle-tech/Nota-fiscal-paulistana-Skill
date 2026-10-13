@@ -3,6 +3,7 @@ import argparse
 import base64
 import json
 import os
+import sys
 import tempfile
 import warnings
 from datetime import date
@@ -93,15 +94,25 @@ def parse_test_response(status, content):
         return result
     try:
         root=etree.fromstring(content,etree.XMLParser(no_network=True,resolve_entities=False))
-        faults=root.xpath('//*[local-name()="Fault"]')
-        if faults:raise ValueError('SOAP Fault retornado pelo serviço.')
-        texts=root.xpath('//*[local-name()="RetornoXML"]/text()')
-        if len(texts)!=1:raise ValueError('RetornoXML ausente ou ambíguo.')
-        inner=etree.fromstring(texts[0].encode(),etree.XMLParser(no_network=True,resolve_entities=False))
-        successes=inner.xpath('//*[local-name()="Cabecalho"]/*[local-name()="Sucesso"]/text()')
+        bodies=root.findall('{'+SOAP+'}Body')
+        if root.tag!='{'+SOAP+'}Envelope' or len(bodies)!=1 or len(bodies[0])!=1:
+            raise ValueError('Envelope SOAP ausente ou ambíguo.')
+        response=bodies[0][0]
+        if response.tag=='{'+SOAP+'}Fault':raise ValueError('SOAP Fault retornado pelo serviço.')
+        if response.tag!='{'+NFE+'}TesteEnvioLoteRPSResponse':
+            raise ValueError('Resposta não corresponde ao teste municipal solicitado.')
+        returns=response.findall('{'+NFE+'}RetornoXML')
+        if len(returns)!=1 or not returns[0].text or len(returns[0]):
+            raise ValueError('RetornoXML ausente ou ambíguo.')
+        inner=etree.fromstring(returns[0].text.encode(),etree.XMLParser(no_network=True,resolve_entities=False))
+        if inner.tag!='{'+NFE+'}RetornoEnvioLoteRPS':
+            raise ValueError('Documento de retorno municipal inesperado.')
+        if any(not isinstance(node.tag, str) or etree.QName(node).namespace for node in inner):
+            raise ValueError('Namespace inesperado nos campos do retorno municipal.')
+        successes=inner.xpath('./Cabecalho/Sucesso/text()')
         if len(successes)!=1:raise ValueError('Confirmação do teste ausente.')
         for tag,field in [('Erro','erros'),('Alerta','alertas')]:
-            for node in inner.xpath('//*[local-name()=$tag]',tag=tag):
+            for node in inner.findall(tag):
                 result[field].append({'codigo':''.join(node.xpath('.//*[local-name()="Codigo"]/text()')),'descricao':''.join(node.xpath('.//*[local-name()="Descricao"]/text()'))})
         result['teste_aprovado']=successes[0].strip().lower()=='true' and not result['erros']
     except (etree.XMLSyntaxError,ValueError) as error:
@@ -116,7 +127,14 @@ def send_test_only(envelope, pem_path, *, authorized=False):
     if root.tag!='{'+SOAP+'}Envelope' or len(bodies)!=1 or len(bodies[0])!=1 or bodies[0][0].tag!='{'+NFE+'}TesteEnvioLoteRPSRequest':
         raise PermissionError('Somente TesteEnvioLoteRPSRequest é permitido.')
     request=bodies[0][0]
-    if request.findtext('{'+NFE+'}VersaoSchema')!='2':raise PermissionError('Apenas teste municipal schema 2.')
+    versions=request.findall('{'+NFE+'}VersaoSchema')
+    messages=request.findall('{'+NFE+'}MensagemXML')
+    if len(versions)!=1 or versions[0].text!='2':raise PermissionError('Apenas teste municipal schema 2.')
+    if len(request)!=2 or len(messages)!=1 or not messages[0].text or len(messages[0]):
+        raise PermissionError('MensagemXML do teste ausente ou ambígua.')
+    inner=etree.fromstring(messages[0].text.encode(),etree.XMLParser(no_network=True,resolve_entities=False))
+    if inner.tag!='{'+NFE+'}PedidoEnvioLoteRPS':
+        raise PermissionError('Apenas lote RPS municipal no teste.')
     with requests.Session() as session:
         session.trust_env=False
         return session.post(TEST_ENDPOINT,data=envelope,headers={'Content-Type':'text/xml; charset=utf-8','SOAPAction':TEST_ACTION},cert=str(pem_path),timeout=(15,45),allow_redirects=False)
@@ -144,6 +162,8 @@ def run_test(config_file, data_file, *, send=False):
 
 
 if __name__=='__main__':
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8')
     parser=argparse.ArgumentParser(description='Somente teste municipal: nunca emite ou cancela NFS-e.')
     parser.add_argument('--config',default='config.json');parser.add_argument('--dados',required=True)
     parser.add_argument('--enviar-teste',action='store_true',help='Autoriza exclusivamente TesteEnvioLoteRPS; não altera emissão/cancelamento.')

@@ -24,6 +24,8 @@ def money(value):
 
 
 def municipal_preview(config, data):
+    if data.get('intermediario'):
+        raise ValueError('Intermediário requer implementação específica; não omitir dados informados.')
     if 'numero_dps' in data:
         raise ValueError('Layout 2 municipal usa numero_rps, não numero_dps.')
     if data.get('calcular_retencoes'):
