@@ -116,3 +116,19 @@ def dispatch_emission(config_file, data_file, mode, layout, *, dry_run=False):
                 'resultado_incerto': uncertain, 'rede_utilizada': None,
                 'contador_alterado': False, 'reenvio_automatico': False,
                 'erros': [{'codigo': code, 'descricao': str(error) if hasattr(error, 'code') else type(error).__name__}]}
+
+
+def fiscal_status(config_file='config.json'):
+    """Read local policy and next RPS; never access a certificate or network."""
+    config = _read_object(config_file)
+    settings = config.get('layout2_municipal', {})
+    raw = (BASE_DIR / 'contador_rps.txt').read_text(encoding='utf-8').strip() if (BASE_DIR / 'contador_rps.txt').exists() else ''
+    number = int(raw) if raw.isascii() and raw.isdigit() and int(raw) > 0 else None
+    return {'sucesso': True, 'tipo': 'status_fiscal_local', 'pasta_skill': str(BASE_DIR),
+            'layout': 2, 'provedor': settings.get('provedor'),
+            'producao_habilitada': settings.get('envio_habilitado') is True,
+            'trava_hardcoded_emissao_layout2': False, 'modo_padrao_cli': 'teste',
+            'modo_producao_explicito': True, 'id_operacao_obrigatorio': True,
+            'proximo_rps': number, 'serie_rps': config.get('serie_rps'),
+            'rede_utilizada': False, 'assinatura_realizada': False,
+            'emissao_realizada': False, 'contador_alterado': False}

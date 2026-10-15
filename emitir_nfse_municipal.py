@@ -3,7 +3,7 @@
 import argparse
 import json
 import sys
-from fiscal_safety import dispatch_emission, FiscalOperationBlocked
+from fiscal_safety import dispatch_emission, fiscal_status, FiscalOperationBlocked
 
 
 def emitir_nota(config_file, dados_file, modo, layout=2, *, dry_run=False):
@@ -29,10 +29,13 @@ if __name__ == '__main__':
     parser.add_argument('--modo', choices=['teste', 'producao'], default='teste')
     parser.add_argument('--layout', type=int, choices=[1, 2], default=2)
     parser.add_argument('--config', default='config.json')
-    parser.add_argument('--dados', required=True)
+    parser.add_argument('--dados')
+    parser.add_argument('--status', action='store_true', help='Consulta local da produção e numeração; sem rede/certificado/emissão')
     parser.add_argument('--json-out', action='store_true')
     parser.add_argument('--dry-run', action='store_true', help='Sem rede, certificado, assinatura ou alteração do contador, em ambos os layouts')
     args = parser.parse_args()
-    result = emitir_nota(args.config, args.dados, args.modo, args.layout, dry_run=args.dry_run)
+    if not args.status and not args.dados:
+        parser.error('Informar --dados explicitamente, ou usar --status.')
+    result = fiscal_status(args.config) if args.status else emitir_nota(args.config, args.dados, args.modo, args.layout, dry_run=args.dry_run)
     print(json.dumps(result, ensure_ascii=False, indent=2))
     raise SystemExit(0 if result.get('sucesso') else 2)

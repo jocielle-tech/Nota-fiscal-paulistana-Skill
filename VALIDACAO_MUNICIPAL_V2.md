@@ -58,4 +58,10 @@ A autorização para instalar/ativar não autoriza emitir notas antigas nem reto
 
 Os novos testes de produção usam journal temporário, transporte simulado e identidades fictícias. Cobrem locks, duplicidade, RPS ocupado, timeout e reconciliação sem reenvio, contador, divergências de valores, método SOAP e campos fiscais. Nenhum desses testes emite/cancela nota, usa certificado real ou chama o município.
 
-Validação desta ampliação: 66 testes aprovados no Linux/WSL. No Windows, 43 aprovados e 23 testes de journal POSIX ignorados explicitamente (produção requer WSL). Nenhuma chamada fiscal integra a suíte pública.
+Validação desta ampliação: 70 testes aprovados no Linux/WSL. No Windows, 47 aprovados e 23 testes de journal POSIX ignorados explicitamente (produção requer WSL). Nenhuma chamada fiscal integra a suíte pública.
+
+## Diagnóstico verificável de ativação
+
+`python emitir_nfse_municipal.py --status --config /config/local.json` consulta somente a configuração local e o contador da skill; dispensa --dados e não usa certificado, rede, assinatura ou emissão. Retorna `producao_habilitada`, `trava_hardcoded_emissao_layout2`, `proximo_rps` e `serie_rps`. O status informa política/numeração; não substitui o teste municipal nem a revisão fiscal.
+
+Não usar um --dry-run ou texto de print/echo para afirmar que o caminho real retornou MAINTENANCE_LOCK. Após ativação, erros como MESSAGES_PAUSED, OPERATION_ID ou RPS_COUNTER dizem respeito ao payload ou à numeração. Preparar esses campos para a cobrança autorizada; não confundir número da NFS-e com número do RPS nem transmitir uma nota apenas para verificar a ativação.
