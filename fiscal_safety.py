@@ -1,8 +1,4 @@
-"""Fiscal maintenance lock and unsigned, network-free local validation.
-
-No runtime flag, environment variable or config value enables fiscal writes.
-Re-enabling operations requires a separate reviewed code change.
-"""
+"""Fiscal dispatch: network-free previews, explicit municipal v2 production, cancellation locked."""
 import json
 from pathlib import Path
 from datetime import date
@@ -97,3 +93,26 @@ def preview_cancellation(number, config_file='config.json'):
     except (OSError, ValueError) as error:
         errors.append({'codigo': 'LOCAL_INPUT', 'descricao': type(error).__name__})
     return _preview_result('cancelamento', errors)
+
+
+def dispatch_emission(config_file, data_file, mode, layout, *, dry_run=False):
+    if dry_run:
+        return preview_emission(config_file, data_file, mode, layout)
+    if layout != 2:
+        return blocked_result('emissao_layout_1')
+    if not data_file:
+        return {'sucesso': False, 'emissao_realizada': False, 'rede_utilizada': False,
+                'erros': [{'codigo': 'PAYLOAD_REQUIRED', 'descricao': 'Informar --dados explicitamente; nenhum rascunho é enviado por padrão.'}]}
+    preview = preview_emission(config_file, data_file, mode, layout)
+    if not preview['sucesso']:
+        return preview
+    try:
+        from municipal_runtime import execute
+        return execute(_read_object(config_file), _read_object(data_file), mode, preview)
+    except Exception as error:
+        code = getattr(error, 'code', 'LOCAL_FAILURE')
+        uncertain = code == 'UNCERTAIN'
+        return {'sucesso': False, 'emissao_realizada': None if uncertain else False,
+                'resultado_incerto': uncertain, 'rede_utilizada': None,
+                'contador_alterado': False, 'reenvio_automatico': False,
+                'erros': [{'codigo': code, 'descricao': str(error) if hasattr(error, 'code') else type(error).__name__}]}

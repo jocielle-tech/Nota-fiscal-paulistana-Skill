@@ -68,5 +68,13 @@
     "NCM": null,
     "ExigibilidadeSuspensa": 0,
     "indDest": 0
+  },
+  "layout2_municipal": {
+    "provedor": "prefeitura_sp",
+    "versao_schema": 2,
+    "endpoint": "https://nfews.prefeitura.sp.gov.br/lotenfe.asmx",
+    "metodo_teste": "TesteEnvioLoteRPS",
+    "metodo_producao": "EnvioLoteRPS",
+    "envio_habilitado": false
   }
 }

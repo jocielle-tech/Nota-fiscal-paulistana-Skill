@@ -1,4 +1,5 @@
 ---
+name: nota-fiscal-paulistana
 description: Faturamento NFS-e SP (Emissão e Cancelamento de Notas Fiscais em São Paulo)
 ---
 
@@ -6,11 +7,11 @@ description: Faturamento NFS-e SP (Emissão e Cancelamento de Notas Fiscais em S
 
 # Habilidade de Faturamento NFS-e SP (OpenClaw)
 
-## Prévia local municipal v2
+## Fluxo municipal v2 com produção controlada
 
-Para preparar ou validar um rascunho sem rede, use `previsualizar_nfse_municipal.py` conforme [VALIDACAO_MUNICIPAL_V2.md](VALIDACAO_MUNICIPAL_V2.md). O novo cliente de teste também é local por padrão; `--enviar-teste` exige autorização explícita para teste remoto. A prévia não autoriza emissão nem avança o contador. Esses módulos não alteram os emissores legados.
+Para rascunho sem rede, use `previsualizar_nfse_municipal.py`. Para teste remoto ou emissão municipal sob autorização, use a entrada separada `emitir_nfse_municipal.py`, conforme [VALIDACAO_MUNICIPAL_V2.md](VALIDACAO_MUNICIPAL_V2.md). Produção é opt-in na configuração local, exige `--modo producao`, arquivo explícito e `id_operacao` estável; inclui consulta de RPS, journal, locks e confirmação independente. `--dry-run` nunca envia, e `--modo teste` nunca gera nota.
 
-
+Esse fluxo não substitui nem bloqueia os emissores/cancelador legados. Sua configuração de produção e seu journal são locais e não devem ser publicados. Ativar a capacidade não autoriza emitir rascunhos antigos ou retomar automações. Consulte a seção de produção controlada antes de qualquer operação real ou recuperação após timeout.
 
 Esta skill permite ao agente **emitir, cancelar e consultar** Notas Fiscais de Serviço eletrônicas (NFS-e) da Prefeitura de São Paulo, conversando com o usuário em português.
 
